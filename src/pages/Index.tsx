@@ -44,10 +44,19 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative">
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b" 
+          alt="Background" 
+          className="w-full h-full object-cover opacity-10"
+        />
+      </div>
+      
       <AnimatedGradient />
       <Navbar />
       
-      <main className="flex-grow pt-32 pb-20">
+      <main className="flex-grow pt-32 pb-20 relative z-10">
         {/* Hero Section */}
         <section className="container px-4 mx-auto">
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto">

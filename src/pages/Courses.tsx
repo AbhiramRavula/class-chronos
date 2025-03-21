@@ -61,12 +61,14 @@ const Courses = () => {
               <CustomButton 
                 variant={activeTab === "add" ? "default" : "outline"} 
                 onClick={() => setActiveTab("add")}
+                className="shadow-sm border border-gray-200 dark:border-gray-800"
               >
                 <Plus size={16} className="mr-2" />
                 Add New
               </CustomButton>
               <CustomButton 
-                variant={activeTab === "list" ? "default" : "outline"} 
+                variant="default"
+                className={activeTab === "list" ? "" : "bg-blue-500 hover:bg-blue-600 text-white shadow-sm"}
                 onClick={() => setActiveTab("list")}
               >
                 View All ({courses.length})
@@ -133,7 +135,7 @@ const Courses = () => {
                   <p className="text-muted-foreground mb-6">
                     Add some courses to get started with your timetable.
                   </p>
-                  <CustomButton onClick={() => setActiveTab("add")}>
+                  <CustomButton onClick={() => setActiveTab("add")} className="shadow-md">
                     <Plus size={16} className="mr-2" />
                     Add Your First Course
                   </CustomButton>

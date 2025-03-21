@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { AnimatedGradient } from "@/components/ui/animated-gradient";
 import Navbar from "@/components/layout/Navbar";
@@ -13,6 +14,7 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+// Sample timetable entries for demonstration
 const sampleTimetableEntries: TimetableEntry[] = [
   {
     id: "1",
@@ -76,6 +78,7 @@ const Timetable = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<"grid" | "calendar">("grid");
 
+  // Load saved data from localStorage
   useEffect(() => {
     const savedCourses = localStorage.getItem("courses");
     const savedFaculty = localStorage.getItem("faculty");
@@ -94,6 +97,7 @@ const Timetable = () => {
     );
   }, []);
 
+  // Save timetable to localStorage when updated
   useEffect(() => {
     if (timetableEntries.length > 0) {
       localStorage.setItem("timetable", JSON.stringify(timetableEntries));
@@ -103,10 +107,11 @@ const Timetable = () => {
   const generateTimetable = () => {
     setIsGenerating(true);
     
+    // Simulate timetable generation with a delay
     setTimeout(() => {
-      setTimetableEntries(
-        sampleTimetableEntries
-      );
+      // For testing, we'll use sampleTimetableEntries
+      // In a real app, this would use real data from courses, faculty, and rooms
+      setTimetableEntries(sampleTimetableEntries);
       setIsGenerating(false);
       toast.success("Timetable successfully generated!");
     }, 2000);
@@ -291,13 +296,13 @@ const Timetable = () => {
                     </CustomButton>
                   </Link>
                   <Link to="/faculty">
-                    <CustomButton variant="secondary" className="gap-2 border border-gray-200 dark:border-gray-800 shadow-md">
+                    <CustomButton variant="blue" className="gap-2 shadow-md">
                       Add Faculty
                       <ArrowRight size={16} />
                     </CustomButton>
                   </Link>
                   <Link to="/rooms">
-                    <CustomButton variant="secondary" className="gap-2 border border-gray-200 dark:border-gray-800 shadow-md">
+                    <CustomButton variant="blue" className="gap-2 shadow-md">
                       Add Rooms
                       <ArrowRight size={16} />
                     </CustomButton>
