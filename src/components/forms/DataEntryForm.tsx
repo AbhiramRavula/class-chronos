@@ -98,7 +98,11 @@ const DataEntryForm: React.FC<DataEntryFormProps> = ({
   const handleCourseSubmit = (data: CourseFormData) => {
     const newCourse: Course = {
       id: crypto.randomUUID(),
-      ...data,
+      name: data.name,
+      code: data.code,
+      enrollment: data.enrollment,
+      durationHours: data.durationHours,
+      description: data.description || "",
     };
     
     if (onAddCourse) {
@@ -116,7 +120,9 @@ const DataEntryForm: React.FC<DataEntryFormProps> = ({
       
     const newFaculty: Faculty = {
       id: crypto.randomUUID(),
-      ...data,
+      name: data.name,
+      email: data.email,
+      department: data.department || "",
       specializations,
     };
     
@@ -131,7 +137,12 @@ const DataEntryForm: React.FC<DataEntryFormProps> = ({
   const handleRoomSubmit = (data: RoomFormData) => {
     const newRoom: Room = {
       id: crypto.randomUUID(),
-      ...data,
+      name: data.name,
+      capacity: data.capacity,
+      building: data.building || "",
+      floor: data.floor || 1,
+      hasProjector: data.hasProjector,
+      hasComputers: data.hasComputers,
     };
     
     if (onAddRoom) {

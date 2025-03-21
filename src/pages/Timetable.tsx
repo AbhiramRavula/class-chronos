@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { AnimatedGradient } from "@/components/ui/animated-gradient";
 import Navbar from "@/components/layout/Navbar";
@@ -7,12 +6,13 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Separator } from "@/components/ui/separator";
 import { CustomButton } from "@/components/ui/custom-button";
 import TimetableGrid from "@/components/timetable/TimetableGrid";
+import { Calendar } from "@/components/ui/calendar";
 import { Course, Faculty, Room, TimetableEntry } from "@/types";
-import { CalendarClock, Share, Download, RefreshCw, ArrowRight } from "lucide-react";
+import { CalendarClock, Share, Download, RefreshCw, ArrowRight, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Sample data for demonstration
 const sampleTimetableEntries: TimetableEntry[] = [
   {
     id: "1",
@@ -73,8 +73,9 @@ const Timetable = () => {
   const [faculty, setFaculty] = useState<Faculty[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [hasData, setHasData] = useState(false);
+  const [date, setDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<"grid" | "calendar">("grid");
 
-  // Load saved data from localStorage
   useEffect(() => {
     const savedCourses = localStorage.getItem("courses");
     const savedFaculty = localStorage.getItem("faculty");
@@ -86,7 +87,6 @@ const Timetable = () => {
     if (savedRooms) setRooms(JSON.parse(savedRooms));
     if (savedTimetable) setTimetableEntries(JSON.parse(savedTimetable));
 
-    // Check if we have enough data to generate a timetable
     setHasData(
       (savedCourses && JSON.parse(savedCourses).length > 0) &&
       (savedFaculty && JSON.parse(savedFaculty).length > 0) &&
@@ -94,7 +94,6 @@ const Timetable = () => {
     );
   }, []);
 
-  // Save timetable to localStorage when updated
   useEffect(() => {
     if (timetableEntries.length > 0) {
       localStorage.setItem("timetable", JSON.stringify(timetableEntries));
@@ -102,14 +101,10 @@ const Timetable = () => {
   }, [timetableEntries]);
 
   const generateTimetable = () => {
-    // In a real implementation, this would call the AI service
-    // For demo purposes, we'll simulate a generation with a delay
     setIsGenerating(true);
     
     setTimeout(() => {
       setTimetableEntries(
-        // If user has entered their own data, we'd use that to generate a realistic timetable
-        // For demo purposes, we'll use the sample data
         sampleTimetableEntries
       );
       setIsGenerating(false);
@@ -147,6 +142,7 @@ const Timetable = () => {
                 onClick={generateTimetable}
                 loading={isGenerating}
                 disabled={!hasData && timetableEntries.length === 0}
+                className="shadow-md"
               >
                 <RefreshCw size={16} className="mr-2" />
                 Generate
@@ -154,17 +150,23 @@ const Timetable = () => {
               
               {timetableEntries.length > 0 && (
                 <>
-                  <CustomButton variant="outline">
+                  <CustomButton 
+                    variant="secondary"
+                    className="border border-gray-200 dark:border-gray-800 shadow-sm"
+                  >
                     <Download size={16} className="mr-2" />
                     Export
                   </CustomButton>
-                  <CustomButton variant="outline">
+                  <CustomButton 
+                    variant="secondary"
+                    className="border border-gray-200 dark:border-gray-800 shadow-sm"
+                  >
                     <Share size={16} className="mr-2" />
                     Share
                   </CustomButton>
                   <CustomButton 
-                    variant="ghost" 
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    variant="outline" 
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 shadow-sm"
                     onClick={clearTimetable}
                   >
                     Clear
@@ -182,21 +184,90 @@ const Timetable = () => {
                 <div className="flex flex-col space-y-4">
                   <div className="flex justify-between items-center">
                     <h2 className="text-xl font-semibold">Current Timetable</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Last generated: {new Date().toLocaleDateString()}
-                    </p>
+                    <div className="flex items-center gap-3">
+                      <p className="text-sm text-muted-foreground">
+                        Last generated: {new Date().toLocaleDateString()}
+                      </p>
+                      
+                      <Tabs 
+                        value={viewMode} 
+                        onValueChange={(value) => setViewMode(value as "grid" | "calendar")}
+                        className="ml-2"
+                      >
+                        <TabsList className="h-9">
+                          <TabsTrigger value="grid" className="text-xs px-3">
+                            <CalendarClock size={16} className="mr-2" />
+                            Grid View
+                          </TabsTrigger>
+                          <TabsTrigger value="calendar" className="text-xs px-3">
+                            <CalendarIcon size={16} className="mr-2" />
+                            Calendar View
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
                   </div>
                   
                   <Separator />
                   
                   <div className="overflow-auto">
-                    <TimetableGrid entries={timetableEntries} />
+                    <TabsContent value="grid" className="m-0">
+                      <TimetableGrid entries={timetableEntries} />
+                    </TabsContent>
+                    
+                    <TabsContent value="calendar" className="m-0">
+                      <div className="flex justify-center p-4">
+                        <div className="border border-border rounded-lg overflow-hidden bg-card max-w-full">
+                          <Calendar
+                            mode="single"
+                            selected={date}
+                            onSelect={(newDate) => newDate && setDate(newDate)}
+                            className="rounded-md"
+                            disabled={{ before: new Date(2023, 0, 1) }}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="mt-6 p-4 border border-border rounded-lg bg-muted/30">
+                        <h3 className="font-medium mb-3">{date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
+                        <div className="space-y-3">
+                          {timetableEntries
+                            .filter(entry => {
+                              const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+                              return entry.timeSlotId && parseInt(entry.timeSlotId) <= 8;
+                            })
+                            .map(entry => (
+                              <div key={entry.id} className="p-3 border border-border rounded-lg bg-background flex justify-between items-center">
+                                <div>
+                                  <div className="font-medium">{entry.course?.name}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {entry.faculty?.name} • {entry.room?.name}
+                                  </div>
+                                </div>
+                                <div className="text-sm font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">
+                                  9:00 - 10:00
+                                </div>
+                              </div>
+                            ))}
+                            
+                            {timetableEntries.filter(entry => parseInt(entry.timeSlotId) <= 8).length === 0 && (
+                              <div className="text-center py-6 text-muted-foreground">
+                                No classes scheduled for this day
+                              </div>
+                            )}
+                        </div>
+                      </div>
+                    </TabsContent>
                   </div>
                 </div>
               </GlassCard>
               
               <div className="flex justify-end">
-                <CustomButton variant="outline" size="sm">
+                <CustomButton 
+                  variant="secondary" 
+                  size="sm" 
+                  className="border border-gray-200 dark:border-gray-800 shadow-sm"
+                >
                   Print Timetable
                 </CustomButton>
               </div>
@@ -214,19 +285,19 @@ const Timetable = () => {
               {!hasData && (
                 <div className="flex flex-wrap gap-4 justify-center">
                   <Link to="/courses">
-                    <CustomButton className="gap-2">
+                    <CustomButton className="gap-2 shadow-md">
                       Add Courses
                       <ArrowRight size={16} />
                     </CustomButton>
                   </Link>
                   <Link to="/faculty">
-                    <CustomButton variant="outline" className="gap-2">
+                    <CustomButton variant="secondary" className="gap-2 border border-gray-200 dark:border-gray-800 shadow-md">
                       Add Faculty
                       <ArrowRight size={16} />
                     </CustomButton>
                   </Link>
                   <Link to="/rooms">
-                    <CustomButton variant="outline" className="gap-2">
+                    <CustomButton variant="secondary" className="gap-2 border border-gray-200 dark:border-gray-800 shadow-md">
                       Add Rooms
                       <ArrowRight size={16} />
                     </CustomButton>

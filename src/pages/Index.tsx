@@ -67,7 +67,7 @@ const Index = () => {
                 </CustomButton>
               </Link>
               <Link to="/courses">
-                <CustomButton size="lg" variant="outline">
+                <CustomButton size="lg" variant="secondary" className="shadow-md border border-gray-200 dark:border-gray-800">
                   Add Data
                 </CustomButton>
               </Link>
@@ -117,8 +117,8 @@ const Index = () => {
               <Link to="/courses">
                 <CustomButton 
                   size="lg" 
-                  variant="glass" 
-                  className="bg-white/20 hover:bg-white/30 text-white border-white/20"
+                  variant="secondary" 
+                  className="bg-white hover:bg-gray-100 text-primary font-medium shadow-md"
                 >
                   Get Started Now
                 </CustomButton>
