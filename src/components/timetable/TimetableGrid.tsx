@@ -91,6 +91,7 @@ const TimetableGrid: React.FC<TimetableGridProps> = ({ entries }) => {
 
   // Function to get color for a course
   const getCourseColor = (courseId: string) => {
+    if (!courseId) return COURSE_COLORS[0]; // Default color if courseId is undefined
     const index = courseId.charCodeAt(0) % COURSE_COLORS.length;
     return COURSE_COLORS[index];
   };

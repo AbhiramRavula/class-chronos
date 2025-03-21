@@ -9,7 +9,15 @@ import { CustomButton } from "@/components/ui/custom-button";
 import TimetableGrid from "@/components/timetable/TimetableGrid";
 import { Calendar } from "@/components/ui/calendar";
 import { Course, Faculty, Room, TimetableEntry } from "@/types";
-import { CalendarClock, Share, Download, RefreshCw, ArrowRight, Calendar as CalendarIcon } from "lucide-react";
+import { 
+  CalendarClock, 
+  Share, 
+  Download, 
+  RefreshCw, 
+  ArrowRight, 
+  Calendar as CalendarIcon,
+  ExternalLink
+} from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -76,7 +84,7 @@ const Timetable = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [hasData, setHasData] = useState(false);
   const [date, setDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<"grid" | "calendar">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "calendar" | "google">("grid");
 
   // Load saved data from localStorage
   useEffect(() => {
@@ -196,7 +204,7 @@ const Timetable = () => {
                       
                       <Tabs 
                         value={viewMode} 
-                        onValueChange={(value) => setViewMode(value as "grid" | "calendar")}
+                        onValueChange={(value) => setViewMode(value as "grid" | "calendar" | "google")}
                         className="ml-2"
                       >
                         <TabsList className="h-9">
@@ -207,6 +215,10 @@ const Timetable = () => {
                           <TabsTrigger value="calendar" className="text-xs px-3">
                             <CalendarIcon size={16} className="mr-2" />
                             Calendar View
+                          </TabsTrigger>
+                          <TabsTrigger value="google" className="text-xs px-3">
+                            <ExternalLink size={16} className="mr-2" />
+                            Google Calendar
                           </TabsTrigger>
                         </TabsList>
                       </Tabs>
@@ -261,6 +273,24 @@ const Timetable = () => {
                               </div>
                             )}
                         </div>
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="google" className="m-0">
+                      <div className="flex justify-center p-4 overflow-x-auto">
+                        <iframe 
+                          src="https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=Asia%2FKolkata&src=MmFiZDkxYWZmYjc5NDQwYWEzOWIxOGQ0YzBhNzhiYTRhZTFmMmRiZTRjMDNjZTRlNDZjOTQwMTgwNjUyYTliYkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=ZW4uaW5kaWFuI2hvbGlkYXlAZ3JvdXAudi5jYWxlbmRhci5nb29nbGUuY29t&color=%239E69AF&color=%230B8043" 
+                          style={{ border: "solid 1px #777" }} 
+                          width="100%" 
+                          height="600" 
+                          frameBorder="0" 
+                          scrolling="no"
+                          title="Google Calendar"
+                          className="max-w-full rounded-lg shadow-md"
+                        />
+                      </div>
+                      <div className="mt-4 text-center text-sm text-muted-foreground">
+                        <p>View and integrate with Google Calendar</p>
                       </div>
                     </TabsContent>
                   </div>
