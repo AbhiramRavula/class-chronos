@@ -4,7 +4,7 @@ import { AnimatedGradient } from "@/components/ui/animated-gradient";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Separator } from "@/components/ui/separator";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, Database } from "lucide-react";
 import TimetableActions from "@/components/timetable/TimetableActions";
 import TimetableContent from "@/components/timetable/TimetableContent";
 import EmptyTimetableState from "@/components/timetable/EmptyTimetableState";
@@ -12,40 +12,72 @@ import {
   loadTimetableData, 
   generateTimetable as generateTimetableService, 
   saveTimetable, 
-  clearTimetable as clearTimetableService 
+  clearTimetable as clearTimetableService,
+  initializeDatabaseWithSampleData
 } from "@/services/timetableService";
 import { TimetableEntry } from "@/types";
+import { CustomButton } from "@/components/ui/custom-button";
+import { toast } from "sonner";
 
 const Timetable = () => {
   const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
   const [hasData, setHasData] = useState(false);
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<"grid" | "calendar" | "google">("grid");
 
-  // Load saved data from localStorage
+  // Load saved data from database
   useEffect(() => {
-    const { timetableEntries, hasData } = loadTimetableData();
-    setTimetableEntries(timetableEntries);
-    setHasData(hasData);
+    const fetchData = async () => {
+      const { timetableEntries, hasData } = await loadTimetableData();
+      setTimetableEntries(timetableEntries);
+      setHasData(hasData);
+    };
+    
+    fetchData();
   }, []);
 
-  // Save timetable to localStorage when updated
+  // Save timetable to database when updated
   useEffect(() => {
-    saveTimetable(timetableEntries);
+    if (timetableEntries.length > 0) {
+      saveTimetable(timetableEntries);
+    }
   }, [timetableEntries]);
 
-  const handleGenerateTimetable = () => {
+  const handleGenerateTimetable = async () => {
     setIsGenerating(true);
-    generateTimetableService()
-      .then(entries => {
-        setTimetableEntries(entries);
-        setIsGenerating(false);
-      });
+    try {
+      const entries = await generateTimetableService();
+      setTimetableEntries(entries);
+    } catch (error) {
+      console.error("Failed to generate timetable:", error);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  const handleClearTimetable = () => {
-    setTimetableEntries(clearTimetableService());
+  const handleClearTimetable = async () => {
+    const entries = await clearTimetableService();
+    setTimetableEntries(entries);
+  };
+
+  const handleInitializeData = async () => {
+    setIsInitializing(true);
+    try {
+      const success = await initializeDatabaseWithSampleData();
+      if (success) {
+        // Refresh data after initialization
+        const { timetableEntries, hasData } = await loadTimetableData();
+        setTimetableEntries(timetableEntries);
+        setHasData(hasData);
+      }
+    } catch (error) {
+      console.error("Failed to initialize data:", error);
+      toast.error("Failed to initialize sample data");
+    } finally {
+      setIsInitializing(false);
+    }
   };
 
   return (
@@ -66,13 +98,27 @@ const Timetable = () => {
               </p>
             </div>
             
-            <TimetableActions 
-              generateTimetable={handleGenerateTimetable}
-              clearTimetable={handleClearTimetable}
-              isGenerating={isGenerating}
-              hasData={hasData}
-              hasEntries={timetableEntries.length > 0}
-            />
+            <div className="flex flex-wrap gap-2">
+              {!hasData && (
+                <CustomButton
+                  variant="outline"
+                  onClick={handleInitializeData}
+                  loading={isInitializing}
+                  className="shadow-md"
+                >
+                  <Database size={16} className="mr-2" />
+                  Initialize Sample Data
+                </CustomButton>
+              )}
+              
+              <TimetableActions 
+                generateTimetable={handleGenerateTimetable}
+                clearTimetable={handleClearTimetable}
+                isGenerating={isGenerating}
+                hasData={hasData}
+                hasEntries={timetableEntries.length > 0}
+              />
+            </div>
           </div>
           
           <Separator className="mb-8" />
