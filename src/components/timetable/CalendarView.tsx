@@ -33,6 +33,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     return timeSlot?.day === dayName;
   });
 
+  // Function to disable weekends and dates before 2023
+  const disabledDays = (date: Date) => {
+    const day = date.getDay();
+    return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
+  };
+
   return (
     <>
       <div className="flex justify-center p-4">
@@ -44,11 +50,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             className="rounded-md"
             disabled={{ 
               before: new Date(2023, 0, 1),
-              // Disable weekends
-              function: (date) => {
-                const day = date.getDay();
-                return day === 0 || day === 6;
-              }
+              function: disabledDays
             }}
           />
         </div>
