@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -13,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Course, Faculty, Room } from "@/types";
 import { Check, Plus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 // Form schemas
 const courseSchema = z.object({
@@ -57,6 +57,7 @@ const DataEntryForm: React.FC<DataEntryFormProps> = ({
   activeTab = "courses",
 }) => {
   const [currentTab, setCurrentTab] = useState(activeTab);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Course form
   const courseForm = useForm<CourseFormData>({
@@ -95,62 +96,122 @@ const DataEntryForm: React.FC<DataEntryFormProps> = ({
   });
 
   // Submit handlers
-  const handleCourseSubmit = (data: CourseFormData) => {
-    const newCourse: Course = {
-      id: crypto.randomUUID(),
-      name: data.name,
-      code: data.code,
-      enrollment: data.enrollment,
-      durationHours: data.durationHours,
-      description: data.description || "",
-    };
-    
-    if (onAddCourse) {
-      onAddCourse(newCourse);
-    }
-    
-    toast.success("Course added successfully!");
-    courseForm.reset();
-  };
-
-  const handleFacultySubmit = (data: FacultyFormData) => {
-    const specializations = data.specializations 
-      ? data.specializations.split(",").map(s => s.trim())
-      : [];
+  const handleCourseSubmit = async (data: CourseFormData) => {
+    setIsSubmitting(true);
+    try {
+      const { data: insertedData, error } = await supabase.from('courses').insert({
+        name: data.name,
+        code: data.code,
+        enrollment: data.enrollment,
+        description: data.description || null,
+        duration_hours: data.durationHours
+      }).select('*').single();
       
-    const newFaculty: Faculty = {
-      id: crypto.randomUUID(),
-      name: data.name,
-      email: data.email,
-      department: data.department || "",
-      specializations,
-    };
-    
-    if (onAddFaculty) {
-      onAddFaculty(newFaculty);
+      if (error) throw error;
+      
+      if (insertedData) {
+        const newCourse: Course = {
+          id: insertedData.id,
+          name: insertedData.name,
+          code: insertedData.code,
+          enrollment: insertedData.enrollment,
+          durationHours: insertedData.duration_hours,
+          description: insertedData.description || "",
+        };
+        
+        if (onAddCourse) {
+          onAddCourse(newCourse);
+        }
+        
+        toast.success("Course added successfully!");
+        courseForm.reset();
+      }
+    } catch (error) {
+      console.error("Error adding course:", error);
+      toast.error("Failed to add course");
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    toast.success("Faculty member added successfully!");
-    facultyForm.reset();
   };
 
-  const handleRoomSubmit = (data: RoomFormData) => {
-    const newRoom: Room = {
-      id: crypto.randomUUID(),
-      name: data.name,
-      capacity: data.capacity,
-      building: data.building || "",
-      floor: data.floor || 1,
-      hasProjector: data.hasProjector,
-      hasComputers: data.hasComputers,
-    };
-    
-    if (onAddRoom) {
-      onAddRoom(newRoom);
+  const handleFacultySubmit = async (data: FacultyFormData) => {
+    setIsSubmitting(true);
+    try {
+      const specializations = data.specializations 
+        ? data.specializations.split(",").map(s => s.trim())
+        : [];
+        
+      const { data: insertedData, error } = await supabase.from('faculty').insert({
+        name: data.name,
+        email: data.email,
+        department: data.department || null,
+        specializations: specializations
+      }).select('*').single();
+      
+      if (error) throw error;
+      
+      if (insertedData) {
+        const newFaculty: Faculty = {
+          id: insertedData.id,
+          name: insertedData.name,
+          email: insertedData.email,
+          department: insertedData.department || "",
+          specializations: insertedData.specializations || [],
+        };
+        
+        if (onAddFaculty) {
+          onAddFaculty(newFaculty);
+        }
+        
+        toast.success("Faculty member added successfully!");
+        facultyForm.reset();
+      }
+    } catch (error) {
+      console.error("Error adding faculty:", error);
+      toast.error("Failed to add faculty member");
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    toast.success("Room added successfully!");
-    roomForm.reset();
+  };
+
+  const handleRoomSubmit = async (data: RoomFormData) => {
+    setIsSubmitting(true);
+    try {
+      const { data: insertedData, error } = await supabase.from('rooms').insert({
+        name: data.name,
+        capacity: data.capacity,
+        building: data.building || null,
+        floor: data.floor || null,
+        has_projector: data.hasProjector,
+        has_computers: data.hasComputers,
+      }).select('*').single();
+      
+      if (error) throw error;
+      
+      if (insertedData) {
+        const newRoom: Room = {
+          id: insertedData.id,
+          name: insertedData.name,
+          capacity: insertedData.capacity,
+          building: insertedData.building || "",
+          floor: insertedData.floor || 1,
+          hasProjector: insertedData.has_projector || false,
+          hasComputers: insertedData.has_computers || false,
+        };
+        
+        if (onAddRoom) {
+          onAddRoom(newRoom);
+        }
+        
+        toast.success("Room added successfully!");
+        roomForm.reset();
+      }
+    } catch (error) {
+      console.error("Error adding room:", error);
+      toast.error("Failed to add room");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -233,7 +294,7 @@ const DataEntryForm: React.FC<DataEntryFormProps> = ({
             />
           </div>
 
-          <CustomButton type="submit" className="w-full">
+          <CustomButton type="submit" className="w-full" loading={isSubmitting}>
             <Plus size={16} className="mr-2" />
             Add Course
           </CustomButton>
@@ -287,7 +348,7 @@ const DataEntryForm: React.FC<DataEntryFormProps> = ({
             />
           </div>
 
-          <CustomButton type="submit" className="w-full">
+          <CustomButton type="submit" className="w-full" loading={isSubmitting}>
             <Plus size={16} className="mr-2" />
             Add Faculty Member
           </CustomButton>
@@ -370,7 +431,7 @@ const DataEntryForm: React.FC<DataEntryFormProps> = ({
             </div>
           </div>
 
-          <CustomButton type="submit" className="w-full">
+          <CustomButton type="submit" className="w-full" loading={isSubmitting}>
             <Plus size={16} className="mr-2" />
             Add Room
           </CustomButton>

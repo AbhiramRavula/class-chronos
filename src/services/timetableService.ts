@@ -1,53 +1,97 @@
 
 import { Course, Faculty, Room, TimetableEntry } from "@/types";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, CourseRow, FacultyRow, RoomRow, TimetableEntryRow } from "@/integrations/supabase/client";
 
-// Load timetable data from Supabase instead of localStorage
+// Convert database rows to application types
+const mapCourseFromRow = (row: CourseRow): Course => ({
+  id: row.id,
+  name: row.name,
+  code: row.code,
+  enrollment: row.enrollment,
+  description: row.description || "",
+  durationHours: row.duration_hours
+});
+
+const mapFacultyFromRow = (row: FacultyRow): Faculty => ({
+  id: row.id,
+  name: row.name,
+  email: row.email,
+  department: row.department || "",
+  specializations: row.specializations || []
+});
+
+const mapRoomFromRow = (row: RoomRow): Room => ({
+  id: row.id,
+  name: row.name,
+  capacity: row.capacity,
+  building: row.building || "",
+  floor: row.floor || 1,
+  hasProjector: row.has_projector || false,
+  hasComputers: row.has_computers || false
+});
+
+// Load timetable data from Supabase
 export const loadTimetableData = async () => {
   try {
     // Fetch courses
-    const { data: courses, error: coursesError } = await supabase
+    const { data: coursesData, error: coursesError } = await supabase
       .from('courses')
       .select('*');
     
     if (coursesError) throw coursesError;
-
+    
     // Fetch faculty
-    const { data: faculty, error: facultyError } = await supabase
+    const { data: facultyData, error: facultyError } = await supabase
       .from('faculty')
       .select('*');
     
     if (facultyError) throw facultyError;
 
     // Fetch rooms
-    const { data: rooms, error: roomsError } = await supabase
+    const { data: roomsData, error: roomsError } = await supabase
       .from('rooms')
       .select('*');
     
     if (roomsError) throw roomsError;
 
+    // Transform the data
+    const courses = coursesData?.map(mapCourseFromRow) || [];
+    const faculty = facultyData?.map(mapFacultyFromRow) || [];
+    const rooms = roomsData?.map(mapRoomFromRow) || [];
+
     // Fetch existing timetable entries
-    const { data: timetableEntries, error: timetableError } = await supabase
+    const { data: timetableData, error: timetableError } = await supabase
       .from('timetable_entries')
-      .select(`
-        *,
-        course:courses(*),
-        faculty:faculty(*),
-        room:rooms(*)
-      `);
+      .select('*');
     
     if (timetableError) throw timetableError;
 
-    const hasData = courses && courses.length > 0 && 
-                   faculty && faculty.length > 0 && 
-                   rooms && rooms.length > 0;
+    // Map timetable entries to include related objects
+    const timetableEntries: TimetableEntry[] = timetableData?.map(entry => {
+      const course = courses.find(c => c.id === entry.course_id);
+      const facultyMember = faculty.find(f => f.id === entry.faculty_id);
+      const room = rooms.find(r => r.id === entry.room_id);
+      
+      return {
+        id: entry.id,
+        courseId: entry.course_id,
+        facultyId: entry.faculty_id,
+        roomId: entry.room_id,
+        timeSlotId: entry.time_slot_id,
+        course: course,
+        faculty: facultyMember,
+        room: room
+      };
+    }) || [];
+
+    const hasData = courses.length > 0 && faculty.length > 0 && rooms.length > 0;
 
     return {
-      courses: courses || [],
-      faculty: faculty || [],
-      rooms: rooms || [],
-      timetableEntries: timetableEntries || [],
+      courses,
+      faculty,
+      rooms,
+      timetableEntries,
       hasData
     };
   } catch (error) {
@@ -183,7 +227,13 @@ export const generateTimetable = async (): Promise<TimetableEntry[]> => {
       await supabase.from('timetable_entries').delete().neq('id', '0');
       
       // Then insert new entries (without the nested objects)
-      const entriesToInsert = newEntries.map(({ course, faculty, room, ...entry }) => entry);
+      const entriesToInsert = newEntries.map(entry => ({
+        id: entry.id,
+        course_id: entry.courseId,
+        faculty_id: entry.facultyId,
+        room_id: entry.roomId,
+        time_slot_id: entry.timeSlotId
+      }));
       
       const { error } = await supabase
         .from('timetable_entries')
@@ -212,7 +262,13 @@ export const saveTimetable = async (timetableEntries: TimetableEntry[]) => {
       await supabase.from('timetable_entries').delete().neq('id', '0');
       
       // Then insert new entries (without the nested objects)
-      const entriesToInsert = timetableEntries.map(({ course, faculty, room, ...entry }) => entry);
+      const entriesToInsert = timetableEntries.map(entry => ({
+        id: entry.id,
+        course_id: entry.courseId,
+        faculty_id: entry.facultyId,
+        room_id: entry.roomId,
+        time_slot_id: entry.timeSlotId
+      }));
       
       const { error } = await supabase
         .from('timetable_entries')
@@ -254,7 +310,7 @@ export const clearTimetable = async () => {
 export const initializeDatabaseWithSampleData = async () => {
   try {
     // Sample faculty data
-    const facultyData: Omit<Faculty, 'id'>[] = [
+    const facultyData = [
       {
         name: "Dr. Alice Johnson",
         email: "alice.johnson@university.edu",
@@ -288,82 +344,85 @@ export const initializeDatabaseWithSampleData = async () => {
     ];
 
     // Sample rooms data
-    const roomsData: Omit<Room, 'id'>[] = [
+    const roomsData = [
       {
         name: "Room 101",
         capacity: 30,
         building: "Science Building",
         floor: 1,
-        hasProjector: true
+        has_projector: true,
+        has_computers: false
       },
       {
         name: "Room 202",
         capacity: 50,
         building: "Engineering Block",
         floor: 2,
-        hasProjector: true,
-        hasComputers: true
+        has_projector: true,
+        has_computers: true
       },
       {
         name: "Lab A",
         capacity: 25,
         building: "Computer Lab",
         floor: 0,
-        hasProjector: true,
-        hasComputers: true
+        has_projector: true,
+        has_computers: true
       },
       {
         name: "Room 303",
         capacity: 40,
         building: "Mathematics Wing",
         floor: 3,
-        hasProjector: true
+        has_projector: true,
+        has_computers: false
       },
       {
         name: "Seminar Hall",
         capacity: 100,
         building: "Main Admin Block",
         floor: 1,
-        hasProjector: true
+        has_projector: true,
+        has_computers: false
       }
     ];
 
     // Sample courses data
-    const coursesData: Omit<Course, 'id'>[] = [
+    const coursesData = [
       {
         name: "Introduction to Computer Science",
         code: "CS101",
         enrollment: 30,
-        durationHours: 3,
-        description: "Covers basics of programming, algorithms, and data structures."
+        description: "Covers basics of programming, algorithms, and data structures.",
+        duration_hours: 3
       },
       {
         name: "Linear Algebra for Engineers",
         code: "MATH204",
         enrollment: 40,
-        durationHours: 2,
-        description: "Focuses on vector spaces, matrices, and applications in engineering."
+        description: "Focuses on vector spaces, matrices, and applications in engineering.",
+        duration_hours: 2
       },
       {
         name: "Fundamentals of Artificial Intelligence",
         code: "AI301",
         enrollment: 35,
-        durationHours: 3,
-        description: "Introduction to AI concepts, search algorithms, and machine learning."
+        description: "Introduction to AI concepts, search algorithms, and machine learning.",
+        duration_hours: 3
       },
       {
         name: "Embedded Systems and IoT",
         code: "EE405",
         enrollment: 25,
-        durationHours: 3,
-        description: "Covers microcontrollers, IoT devices, and real-time operating systems."
+        description: "Covers microcontrollers, IoT devices, and real-time operating systems.",
+        duration_hours: 3
       },
       {
         name: "Thermodynamics",
         code: "ME210",
         enrollment: 50,
-        durationHours: 2,
-        description: "Fundamental concepts of heat, energy, and their engineering applications."
+        description: "Fundamental concepts of heat, energy, and their engineering applications.",
+        duration_hours: 2
       }
     ];
 

@@ -9,7 +9,136 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      courses: {
+        Row: {
+          code: string
+          description: string | null
+          duration_hours: number
+          enrollment: number
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          description?: string | null
+          duration_hours?: number
+          enrollment: number
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          description?: string | null
+          duration_hours?: number
+          enrollment?: number
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      faculty: {
+        Row: {
+          department: string | null
+          email: string
+          id: string
+          name: string
+          specializations: string[] | null
+        }
+        Insert: {
+          department?: string | null
+          email: string
+          id?: string
+          name: string
+          specializations?: string[] | null
+        }
+        Update: {
+          department?: string | null
+          email?: string
+          id?: string
+          name?: string
+          specializations?: string[] | null
+        }
+        Relationships: []
+      }
+      rooms: {
+        Row: {
+          building: string | null
+          capacity: number
+          floor: number | null
+          has_computers: boolean | null
+          has_projector: boolean | null
+          id: string
+          name: string
+        }
+        Insert: {
+          building?: string | null
+          capacity: number
+          floor?: number | null
+          has_computers?: boolean | null
+          has_projector?: boolean | null
+          id?: string
+          name: string
+        }
+        Update: {
+          building?: string | null
+          capacity?: number
+          floor?: number | null
+          has_computers?: boolean | null
+          has_projector?: boolean | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      timetable_entries: {
+        Row: {
+          course_id: string
+          created_at: string
+          faculty_id: string
+          id: string
+          room_id: string
+          time_slot_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          faculty_id: string
+          id?: string
+          room_id: string
+          time_slot_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          faculty_id?: string
+          id?: string
+          room_id?: string
+          time_slot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_entries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_entries_faculty_id_fkey"
+            columns: ["faculty_id"]
+            isOneToOne: false
+            referencedRelation: "faculty"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_entries_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
